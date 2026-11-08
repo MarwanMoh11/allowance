@@ -6,7 +6,7 @@ A Claude agent gets its own Solana wallet and a small allowance. It pays for dat
 
 **[▶ Watch the 2-minute demo](https://youtu.be/Mcyts4OAp5I)** · **[Play the replay in your browser](https://marwanmoh11.github.io/allowance/)** · **[Jump straight to the hijack drill](https://marwanmoh11.github.io/allowance/?play=drill)**
 
-[![The hijacked-agent drill: the agent pays 0.001 SOL for a deals feed, the feed tells it to send 1 SOL to a scammer, and the wallet's rules refuse with a Nope sticker](.github/media/hero.png)](https://marwanmoh11.github.io/allowance/?play=drill)
+[![The hijacked-agent drill: the agent pays 0.001 SOL for a deals feed, the feed tells it to send 1 SOL to a scammer, and the wallet's rules refuse with a Nope sticker](.github/media/drill.gif)](https://marwanmoh11.github.io/allowance/?play=drill)
 
 *The hijacked-agent drill, replayed from a real devnet run. The gold star is a real 0.001 SOL payment with the agent's reason in its memo. The 1 SOL to the scammer is refused before anything is signed.*
 
