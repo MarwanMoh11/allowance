@@ -107,6 +107,7 @@ function render(ev) {
     case 'delivered': return print('verified', '✓ merchant verified it on-chain, data delivered');
     case 'blocked':
       return print('declined', `${itemLine(ev.api === 'send_payment' ? `pay ${short(ev.recipient || '????????')}` : ev.api, ev.amountSol)}<div class="why">${esc(ev.why)}. Nothing was signed.</div><div class="stamp">DECLINED</div>`);
+    case 'hijack': return print('hijack', esc(ev.text));
     case 'answer': return print('answer', md(ev.text));
     case 'error': return print('err', `ERR ${esc(ev.message)}`);
     case 'done':
@@ -124,7 +125,7 @@ $('go').onclick = async () => {
   $('feed').innerHTML = '';
   runSpent = 0; runCalls = 0; errandNo += 1; sessionStorage.setItem('errandNo', errandNo);
   const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  print('errand-line', `<div class="no"><span>ERRAND #${String(errandNo).padStart(4, '0')}${mode === 'compromised' ? ' · <b style="color:var(--stamp)">COMPROMISED-MODEL DRILL</b>' : ''}</span><span>${time}</span></div><div class="q">“${esc(question)}”</div>`);
+  print('errand-line', `<div class="no"><span>ERRAND #${String(errandNo).padStart(4, '0')}${mode === 'compromised' ? ' · <b style="color:var(--stamp)">HIJACKED-AGENT DRILL</b>' : ''}</span><span>${time}</span></div><div class="q">“${esc(question)}”</div>`);
   try {
     const res = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ question, mode }) });
     const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';

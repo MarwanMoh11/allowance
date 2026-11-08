@@ -131,6 +131,8 @@ main { display: grid; grid-template-columns: 300px minmax(0, 1fr) 280px; gap: 28
 .errand-line .no { font-size: 11px; color: var(--ink-2); display: flex; justify-content: space-between; }
 .note { font: italic 400 16px/1.35 var(--serif); color: var(--pen); margin: 10px 0 10px 10px; padding-left: 10px; border-left: 2px solid #24419e33; }
 .note::before { content: "agent: "; font: 400 10.5px var(--mono); letter-spacing: .08em; color: var(--ink-3); font-style: normal; }
+.hijack { font-size: 12px; color: var(--stamp); border: 1.5px dashed var(--stamp); padding: 6px 8px; margin: 10px 0 4px; background: #c8352a0d; }
+.hijack::before { content: "DRILL · "; font-weight: 700; letter-spacing: .08em; }
 .funded { font-size: 12px; color: var(--ok); margin: 8px 0; }
 .err { color: var(--stamp); font-size: 12px; margin: 8px 0; }
 
