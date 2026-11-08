@@ -13,8 +13,30 @@ let state = null;
 let me = null;
 const provider = () => window.phantom?.solana || window.solana;
 
+// Replay mode: on a static host (GitHub Pages) there is no server or API key, so the page
+// plays back real devnet runs recorded on 8 Nov 2026. Every link still points at the real transaction.
+const REPLAY = !['localhost', '127.0.0.1'].includes(location.hostname) || new URLSearchParams(location.search).has('replay');
+let replayBase = null; let replaySpent = 0; let replayReceipts = [];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function getState() {
+  if (!REPLAY) return (await fetch('/api/state')).json();
+  if (!replayBase) replayBase = await (await fetch('replay/state.json')).json();
+  return { ...replayBase, spentSol: replaySpent, receipts: replayReceipts, policy: { ...replayBase.policy, sessionBudgetSol: 0.05 } };
+}
+
+if (REPLAY) {
+  const banner = document.createElement('div');
+  banner.className = 'replay-banner';
+  banner.innerHTML = 'You\'re watching a replay of real runs on Solana devnet, recorded 8 Nov 2026. Every gold star links to the real payment. To run the agent live, <a href="https://github.com/MarwanMoh11/allowance" target="_blank">clone the repo</a>.';
+  document.body.prepend(banner);
+  for (const id of ['connect', 'fund', 'revoke']) { $(id).disabled = true; }
+  $('connect').textContent = 'Phantom works when you run it locally';
+  $('cap').disabled = true; $('budget').disabled = true;
+}
+
 async function refresh() {
-  try { state = await (await fetch('/api/state')).json(); } catch { return; }
+  try { state = await getState(); } catch { return; }
   const left = Math.max(0, state.policy.sessionBudgetSol - state.spentSol);
   $('left').textContent = fmt(left);
   $('budget-show').textContent = fmt(state.policy.sessionBudgetSol);
@@ -129,6 +151,11 @@ $('go').onclick = async () => {
   $('feed').innerHTML = '';
   runSpent = 0; runCalls = 0;
   add('you-asked', `${esc(question)}<small>${mode === 'compromised' ? 'Drill: the agent is pretending to be hijacked' : 'Your errand'}</small>`);
+  if (REPLAY) {
+    await playReplay(question, mode);
+    $('go').disabled = false; $('go').textContent = 'Send the agent';
+    return;
+  }
   try {
     const res = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ question, mode }) });
     const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
@@ -148,6 +175,30 @@ $('go').onclick = async () => {
   $('go').disabled = false; $('go').textContent = 'Send the agent';
   refresh();
 };
+
+async function playReplay(question, mode) {
+  const q = question.toLowerCase();
+  const name = mode === 'compromised' || q.includes('deal') ? 'drill' : q.includes('insider') ? 'insider' : 'trip';
+  const known = [...document.querySelectorAll('.idea')].some((c) => c.dataset.q === question);
+  if (!known) add('bubble', 'This replay only has the three example errands, so here is the closest one. Run it locally to ask anything.');
+  const lines = (await (await fetch(`replay/${name}.ndjson`)).text()).split('\n').filter((l) => l.trim());
+  const pause = { thought: 900, quote: 700, signing: 900, paid: 500, delivered: 600, hijack: 1100, blocked: 900, answer: 700, done: 300 };
+  for (const line of lines) {
+    const ev = JSON.parse(line);
+    await sleep(pause[ev.type] ?? 400);
+    if (ev.type === 'paid') { replaySpent += ev.amountSol; replayReceipts = [ev, ...replayReceipts]; }
+    render(ev);
+    if (ev.type === 'paid' || ev.type === 'done') refresh();
+  }
+}
+
+if (REPLAY) {
+  $('reset').onclick = () => {
+    replaySpent = 0; replayReceipts = [];
+    $('feed').innerHTML = '<p class="empty">A new day. Send the agent on an errand and its purchases show up here, one sticker per payment.</p>';
+    refresh();
+  };
+}
 
 refresh();
 setInterval(refresh, 15000);
