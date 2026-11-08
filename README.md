@@ -4,7 +4,7 @@
 
 A Claude agent gets a small allowance on Solana. It pays for data one API call at a time (HTTP 402 → pay on Solana → retry) and writes *why* it paid into an on-chain memo. The daily budget is an SPL Token approval, so Solana's token program refuses anything past it, and the per-item cap and merchant allowlist are checked in code before signing. A scammer's address smuggled into an API response gets a "Nope." from both, not your SOL.
 
-**[▶ Watch the 2-minute demo](https://youtu.be/Mcyts4OAp5I)** · **[Play the replay in your browser](https://marwanmoh11.github.io/allowance/)** · **[Jump straight to the hijack drill](https://marwanmoh11.github.io/allowance/?play=drill)**
+**[▶ Watch the 2-minute demo](https://youtu.be/gI-LcV0pVs0)** · **[Play the replay in your browser](https://marwanmoh11.github.io/allowance/)** · **[Jump straight to the hijack drill](https://marwanmoh11.github.io/allowance/?play=drill)**
 
 [![The hijacked-agent drill: the agent pays 0.001 SOL for a deals feed, the feed tells it to send 0.5 SOL to a scammer, the wallet's rules refuse, and when the drill skips them Solana refuses too](https://raw.githubusercontent.com/MarwanMoh11/allowance/main/.github/media/drill.gif)](https://marwanmoh11.github.io/allowance/?play=drill)
 
