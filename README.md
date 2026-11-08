@@ -30,11 +30,11 @@ Agents are starting to pay for things: APIs, data, compute. Today you either giv
 
 | Layer | What stops a bad payment | Demo |
 |---|---|---|
-| The model | Claude ignores instructions inside tool results | Normal mode: the poisoned deals feed gets ignored |
-| The policy (code) | Per-call cap, budget, merchant allowlist, checked before signing | "Compromised model" drill: the agent tries to pay a scammer 1 SOL and gets **DECLINED** |
+| The model | Claude treats instructions inside tool results as data | The poisoned deals feed: Claude buys the feed, spots the "system notice", calls it a likely scam, pays nothing |
+| The policy (code) | Per-call cap, budget, merchant allowlist, checked before signing | Hijacked-agent drill: a simulated hijacked agent obeys the notice and tries to pay a scammer 1 SOL, and gets **DECLINED** |
 | The chain | The agent only holds what you funded | Revoke pulls the balance back |
 
-The compromised-model drill tells the agent to obey instructions it finds in API responses, which simulates a jailbroken or sycophantic model. The policy still blocks the payment, because the guardrail is code, not a prompt.
+In testing, Claude refused the injected payment every time, even when told to role-play an obedient agent. So the drill simulates the hijack in the runtime: when the box is ticked, the agent's wallet tries to carry out the instruction found in the API response, as a jailbroken or over-agreeable model would. The policy still blocks it, because the guardrail is code, not a prompt.
 
 ## Why Solana
 
