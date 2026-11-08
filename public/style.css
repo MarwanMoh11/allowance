@@ -24,6 +24,9 @@ h2 { font-size: 22px; font-weight: 800; line-height: 1.15; display: flex; align-
 .addr { font-weight: 700; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
 
+.replay-banner { background: var(--ink); color: var(--white); text-align: center; font-size: 15px; padding: 10px 16px; }
+.replay-banner a { color: var(--sun); }
+
 /* header */
 .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; max-width: 1360px; margin: 0 auto; padding: 26px 28px 8px; }
 h1 { font-size: 54px; font-weight: 800; line-height: 1; letter-spacing: -0.01em; }
