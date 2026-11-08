@@ -62,6 +62,6 @@ On first start the server creates three devnet keypairs in `.wallets.json` (agen
 
 ## Built with
 
-Solana web3.js, the SPL Memo program, Phantom, Claude (Anthropic API, tool use), Node.js and Express. Fonts: Instrument Serif and IBM Plex Mono (SIL Open Font License).
+Solana web3.js, the SPL Memo program, Phantom, Claude (Anthropic API, tool use), Node.js and Express. Fonts: Baloo 2 and Atkinson Hyperlegible (SIL Open Font License). Design direction informed by Anthropic's open-source frontend-design skill.
 
 Designed and directed by Marwan Abudaif; built with Claude Code as the implementation assistant.

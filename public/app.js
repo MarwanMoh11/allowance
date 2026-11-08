@@ -5,53 +5,53 @@ const txUrl = (sig) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
 const addrUrl = (a) => `https://explorer.solana.com/address/${a}?cluster=devnet`;
 const short = (s) => `${s.slice(0, 4)}…${s.slice(-4)}`;
 const fmt = (x) => Number(Number(x).toFixed(4)).toString();
-const sol4 = (x) => Number(x).toFixed(4);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const md = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#+\s*/gm, '');
+const STAR = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 4l5.9 12.6 13.8 1.7-10.2 9.5 2.7 13.7L24 34.8l-12.2 6.7 2.7-13.7L4.3 18.3l13.8-1.7z" fill="#ffc531" stroke="#22305a" stroke-width="3" stroke-linejoin="round"/></svg>';
 
 let state = null;
 let me = null;
-let errandNo = Number(sessionStorage.getItem('errandNo') || 0);
 const provider = () => window.phantom?.solana || window.solana;
 
 async function refresh() {
   try { state = await (await fetch('/api/state')).json(); } catch { return; }
-  $('agent-addr').textContent = short(state.agent.address);
-  $('agent-addr').href = addrUrl(state.agent.address);
+  const left = Math.max(0, state.policy.sessionBudgetSol - state.spentSol);
+  $('left').textContent = fmt(left);
+  $('budget-show').textContent = fmt(state.policy.sessionBudgetSol);
+  $('jar-fill').style.height = `${Math.round((left / state.policy.sessionBudgetSol) * 100)}%`;
   $('agent-bal').textContent = fmt(state.agent.sol);
+  $('agent-addr').href = addrUrl(state.agent.address);
   $('model-pill').textContent = state.model;
   if (document.activeElement !== $('cap')) $('cap').value = state.policy.perCallCapSol;
   if (document.activeElement !== $('budget')) $('budget').value = state.policy.sessionBudgetSol;
   $('allow').textContent = short(state.merchant.address);
   $('spent').textContent = fmt(state.spentSol);
-  $('budget-show').textContent = fmt(state.policy.sessionBudgetSol);
-  $('meter-fill').style.width = `${Math.min(100, (state.spentSol / state.policy.sessionBudgetSol) * 100)}%`;
   $('catalog').innerHTML = Object.entries(state.catalog).map(([k, v]) =>
-    `<li><span>${k}</span><span class="lead"></span><span class="${v.priceSol > state.policy.perCallCapSol ? 'over' : ''}">${sol4(v.priceSol)} ◎</span></li>`).join('');
+    `<li><span>${k}</span><span class="price ${v.priceSol > state.policy.perCallCapSol ? 'over' : ''}">${fmt(v.priceSol)} ◎</span></li>`).join('');
   $('receipts').innerHTML = state.receipts.length ? state.receipts.map((r) =>
-    `<li><div class="top"><span>${esc(r.api)}</span><a target="_blank" href="${txUrl(r.sig)}">${sol4(r.amountSol)} ◎ ↗</a></div><div class="why">${esc(r.reason)}</div></li>`).join('')
-    : '<li class="none">Nothing spent yet.</li>';
+    `<li><div class="top-line"><span>${esc(r.api)}</span><a target="_blank" href="${txUrl(r.sig)}">${fmt(r.amountSol)} ◎</a></div><div class="reason">${esc(r.reason)}</div></li>`).join('')
+    : '<li class="none">Nothing spent yet today.</li>';
   if (me) {
     const bal = await conn.getBalance(me).catch(() => null);
-    $('me').textContent = `${short(me.toBase58())}${bal == null ? '' : ` · ${fmt(bal / LAMPORTS_PER_SOL)} ◎`}`;
+    $('me').textContent = `${short(me.toBase58())}${bal == null ? '' : `, ${fmt(bal / LAMPORTS_PER_SOL)} ◎`}`;
   }
 }
 
 $('connect').onclick = async () => {
   const p = provider();
-  if (!p) { window.open('https://phantom.app/', '_blank'); return; }
+  if (!p) { window.open('https://phantom.com/download', '_blank'); return; }
   try {
     const r = await p.connect();
     me = r.publicKey;
     $('fund').disabled = false; $('revoke').disabled = false;
     $('connect').textContent = 'Phantom connected';
     refresh();
-  } catch (e) { print('err', esc(e.message)); }
+  } catch (e) { add('err', `Phantom didn't connect: ${esc(e.message)}`); }
 };
 
 $('fund').onclick = async () => {
   const sol = Number($('fund-amt').value);
-  if (!(sol > 0)) return;
+  if (!(sol > 0)) { add('err', 'Enter how much SOL to put in the jar.'); return; }
   $('fund').disabled = true; $('fund').textContent = 'Approve in Phantom…';
   try {
     const { blockhash } = await conn.getLatestBlockhash();
@@ -61,16 +61,16 @@ $('fund').onclick = async () => {
     const { signature } = await provider().signAndSendTransaction(t);
     $('fund').textContent = 'Confirming…';
     await conn.confirmTransaction(signature, 'confirmed');
-    print('funded', `+ ${fmt(sol)} ◎ put in the envelope by you · <a target="_blank" href="${txUrl(signature)}">${short(signature)} ↗</a>`);
-  } catch (e) { print('err', esc(e.message)); }
-  $('fund').disabled = false; $('fund').textContent = 'Fund the agent';
+    add('funded', `You put ${fmt(sol)} ◎ in the jar. <a target="_blank" href="${txUrl(signature)}">See it on Solana</a>`);
+  } catch (e) { add('err', `The jar wasn't filled: ${esc(e.message)}`); }
+  $('fund').disabled = false; $('fund').textContent = 'Fill the jar';
   refresh();
 };
 
 $('revoke').onclick = async () => {
   const r = await (await fetch('/api/withdraw', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ to: me.toBase58() }) })).json();
-  if (r.sig) print('funded', `− ${fmt(r.sol)} ◎ returned to you (allowance revoked) · <a target="_blank" href="${txUrl(r.sig)}">${short(r.sig)} ↗</a>`);
-  else print('err', esc(r.error));
+  if (r.sig) add('funded', `${fmt(r.sol)} ◎ came back to your wallet. <a target="_blank" href="${txUrl(r.sig)}">See it on Solana</a>`);
+  else add('err', `Nothing came back: ${esc(r.error)}`);
   refresh();
 };
 
@@ -79,15 +79,19 @@ const savePolicy = async () => {
   refresh();
 };
 $('cap').onchange = savePolicy; $('budget').onchange = savePolicy;
-$('reset').onclick = async () => { await fetch('/api/reset', { method: 'POST' }); $('feed').innerHTML = '<p class="idle">Waiting for an errand…</p>'; refresh(); };
+$('reset').onclick = async () => {
+  $('feed').innerHTML = '<p class="empty">A new day. Send the agent on an errand and its purchases show up here, one sticker per payment.</p>';
+  await fetch('/api/reset', { method: 'POST' });
+  refresh();
+};
 
-document.querySelectorAll('.chip').forEach((c) => c.onclick = () => {
+document.querySelectorAll('.idea').forEach((c) => c.onclick = () => {
   $('q').value = c.dataset.q;
   $('compromised').checked = c.dataset.mode === 'compromised';
 });
 
-function print(cls, html) {
-  const idle = $('feed').querySelector('.idle'); if (idle) idle.remove();
+function add(cls, html) {
+  const empty = $('feed').querySelector('.empty'); if (empty) empty.remove();
   const d = document.createElement('div'); d.className = cls; d.innerHTML = html;
   $('feed').appendChild(d);
   d.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -95,25 +99,25 @@ function print(cls, html) {
 }
 
 let runSpent = 0; let runCalls = 0;
-const itemLine = (label, amount) => `<div class="ln"><span>${esc(label).toUpperCase()}</span><span class="lead"></span><span class="amt-r">${sol4(amount)} ◎</span></div>`;
 
 function render(ev) {
   switch (ev.type) {
-    case 'thought': return print('note', esc(ev.text));
-    case 'quote': return print('item quoted', `<div class="ln"><span class="tag402">402</span><span>${esc(ev.api)} quotes</span><span class="lead"></span><span>${sol4(ev.amountSol)} ◎</span></div>`);
+    case 'thought': return add('bubble', esc(ev.text));
+    case 'quote':
+      return add('row asked', `<div class="dot"></div><div class="what">${ev.api === 'send_payment' ? `Someone wants ${fmt(ev.amountSol)} ◎ sent to ${short(ev.recipient)}` : `The shop asks ${fmt(ev.amountSol)} ◎ for ${esc(ev.api)}`}</div>`);
     case 'paid':
       runSpent += ev.amountSol; runCalls += 1;
-      return print('item', `${itemLine(ev.api, ev.amountSol)}<div class="meta">why: ${esc(ev.reason)}</div><div class="meta">tx <a target="_blank" href="${txUrl(ev.sig)}">${short(ev.sig)} ↗</a> · memo on-chain</div>`);
-    case 'delivered': return print('verified', '✓ merchant verified it on-chain, data delivered');
-    case 'blocked':
-      return print('declined', `${itemLine(ev.api === 'send_payment' ? `pay ${short(ev.recipient || '????????')}` : ev.api, ev.amountSol)}<div class="why">${esc(ev.why)}. Nothing was signed.</div><div class="stamp">DECLINED</div>`);
-    case 'hijack': return print('hijack', esc(ev.text));
-    case 'answer': return print('answer', md(ev.text));
-    case 'error': return print('err', `ERR ${esc(ev.message)}`);
+      return add('row', `<div class="star">${STAR}</div><div><div class="what">Bought <b>${esc(ev.api)}</b> for <b>${fmt(ev.amountSol)} ◎</b></div><div class="why">Because: ${esc(ev.reason)}. <a target="_blank" href="${txUrl(ev.sig)}">Payment on Solana</a></div></div>`);
+    case 'delivered': return add('checked', 'The shop checked the payment on Solana and handed over the data.');
+    case 'hijack': return add('hijack', esc(ev.text));
+    case 'blocked': {
+      const what = ev.api === 'send_payment' ? `Tried to send ${fmt(ev.amountSol)} ◎ to ${short(ev.recipient || '')}` : `Tried to buy ${esc(ev.api)} for ${fmt(ev.amountSol)} ◎`;
+      return add('row nope-row', `<div class="x">✕</div><div><div class="what">${what}</div><div class="why">Against the house rules: ${esc(ev.why)}. Nothing was signed.</div></div><div class="nope">Nope.</div>`);
+    }
+    case 'answer': return add('answer', md(ev.text));
+    case 'error': return add('err', `Something went wrong: ${esc(ev.message)}`);
     case 'done':
-      print('total', `<div class="ln"><span>TOTAL · ${runCalls} PURCHASE${runCalls === 1 ? '' : 'S'}</span><span class="lead"></span><span>${sol4(runSpent)} ◎</span></div>`);
-      print('barcode', '');
-      return print('thanks', 'THANK YOU FOR SPENDING RESPONSIBLY');
+      return add('tally', `<span class="stars">${'★'.repeat(runCalls) || '☆'}</span> ${runCalls} ${runCalls === 1 ? 'thing' : 'things'} bought for ${fmt(runSpent)} ◎`);
     default: return null;
   }
 }
@@ -121,11 +125,10 @@ function render(ev) {
 $('go').onclick = async () => {
   const question = $('q').value.trim() || $('q').placeholder;
   const mode = $('compromised').checked ? 'compromised' : 'normal';
-  $('go').disabled = true; $('go').textContent = 'Agent on the errand…';
+  $('go').disabled = true; $('go').textContent = 'Out on the errand…';
   $('feed').innerHTML = '';
-  runSpent = 0; runCalls = 0; errandNo += 1; sessionStorage.setItem('errandNo', errandNo);
-  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  print('errand-line', `<div class="no"><span>ERRAND #${String(errandNo).padStart(4, '0')}${mode === 'compromised' ? ' · <b style="color:var(--stamp)">HIJACKED-AGENT DRILL</b>' : ''}</span><span>${time}</span></div><div class="q">“${esc(question)}”</div>`);
+  runSpent = 0; runCalls = 0;
+  add('you-asked', `${esc(question)}<small>${mode === 'compromised' ? 'Drill: the agent is pretending to be hijacked' : 'Your errand'}</small>`);
   try {
     const res = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ question, mode }) });
     const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
@@ -141,7 +144,7 @@ $('go').onclick = async () => {
         if (ev.type === 'paid' || ev.type === 'done') refresh();
       }
     }
-  } catch (e) { print('err', esc(e.message)); }
+  } catch (e) { add('err', `The errand stopped: ${esc(e.message)}`); }
   $('go').disabled = false; $('go').textContent = 'Send the agent';
   refresh();
 };

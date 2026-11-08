@@ -6,102 +6,101 @@
 <title>Allowance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
 </head>
 <body>
-<header class="masthead">
-  <div>
-    <h1>Allowance<span class="dot">.</span></h1>
-    <p class="sub"><em>Pocket money for your AI agent.</em> Not your wallet.</p>
+<header class="top">
+  <div class="brand">
+    <h1>Allowance</h1>
+    <p>Pocket money for your AI agent, not your wallet.</p>
   </div>
-  <div class="tags">
-    <span class="tag-stamp">Solana devnet</span>
-    <span class="tag-plain" id="model-pill">claude</span>
+  <div class="net">
+    <span class="pill">Solana devnet</span>
+    <span class="pill quiet" id="model-pill">claude</span>
   </div>
 </header>
 
 <main>
-  <!-- left: the money -->
   <div class="col">
-    <section class="envelope">
-      <div class="flap"></div>
-      <div class="env-body">
-        <div class="kicker">No. 1 &mdash; Fund it</div>
-        <div class="env-row"><span>From</span><span id="me" class="hand">not connected</span></div>
-        <button id="connect" class="btn">Connect Phantom</button>
-        <div class="fund">
-          <label class="amt"><input id="fund-amt" type="number" step="0.05" min="0.01" value="0.2"><span>◎</span></label>
-          <button id="fund" class="btn ink" disabled>Fund the agent</button>
+    <section class="jar-card">
+      <div class="jar-wrap">
+        <div class="jar" aria-hidden="true">
+          <div class="lid"></div>
+          <div class="glass"><div id="jar-fill"></div></div>
         </div>
-        <div class="env-row to"><span>To the agent</span><a id="agent-addr" target="_blank" class="addr"></a></div>
-        <div class="balance"><span id="agent-bal">0</span><small>◎ inside</small></div>
-        <p class="fine">The hard limit is on-chain. The agent can never spend more than you put in.</p>
-        <button id="revoke" class="btn link" disabled>Take it back (revoke)</button>
+        <div class="jar-read">
+          <div class="left-today"><span id="left">0.05</span> ◎</div>
+          <div class="sub">left to spend today, out of <span id="budget-show">0.05</span></div>
+          <div class="onchain">The agent's wallet holds <b id="agent-bal">0</b> ◎ on Solana. <a id="agent-addr" target="_blank">See wallet</a></div>
+        </div>
       </div>
+
+      <h2><span class="n">1</span>Fill the jar</h2>
+      <p class="you">From your wallet: <span id="me">not connected</span></p>
+      <div class="fund-row">
+        <button id="connect" class="btn">Connect Phantom</button>
+      </div>
+      <div class="fund-row">
+        <label class="amt"><input id="fund-amt" type="number" step="0.05" min="0.01" value="0.2"> ◎</label>
+        <button id="fund" class="btn go" disabled>Fill the jar</button>
+      </div>
+      <button id="revoke" class="btn plain" disabled>Empty the jar back to me</button>
     </section>
 
-    <section class="slip">
-      <div class="kicker">No. 2 &mdash; Permission slip</div>
-      <p class="slip-text">
-        I allow my agent to spend up to
-        <input id="cap" type="number" step="0.001" min="0.0005" class="blank">◎ per purchase,
-        and no more than
-        <input id="budget" type="number" step="0.01" min="0.001" class="blank">◎ this session,
-        and to pay <u>only</u> the merchant <span id="allow" class="addr"></span>.
-      </p>
-      <div class="sig"><span class="sig-name">M. Abudaif</span><span class="sig-line">owner's signature</span></div>
-      <div class="gauge">
-        <div class="gauge-bar"><div id="meter-fill"></div></div>
-        <div class="gauge-row"><span>spent</span><span><b id="spent">0</b> / <span id="budget-show">0</span> ◎</span></div>
-      </div>
-      <p class="fine">Checked in code before anything is signed. A prompt can't talk its way past it.</p>
+    <section class="rules">
+      <div class="magnet" aria-hidden="true"></div>
+      <h2><span class="n">2</span>House rules</h2>
+      <ul>
+        <li>Spend up to <input id="cap" type="number" step="0.001" min="0.0005"> ◎ on any one thing</li>
+        <li>Spend no more than <input id="budget" type="number" step="0.01" min="0.001"> ◎ today</li>
+        <li>Only buy from the shop <span id="allow" class="addr"></span></li>
+      </ul>
+      <p class="small">Your agent can't see these numbers or argue with them. The wallet checks every payment against them before signing.</p>
+      <p class="small spent-line">Spent today: <b id="spent">0</b> ◎</p>
     </section>
   </div>
 
-  <!-- centre: the errand + the receipt roll -->
-  <div class="col centre">
+  <div class="col wide">
     <section class="errand">
-      <div class="kicker">No. 3 &mdash; Send it on an errand</div>
-      <textarea id="q" rows="3" placeholder="Plan a cheap 4-night trip from Cairo to Dubai next week."></textarea>
-      <div class="chips">
-        <button class="chip" data-q="Plan a cheap 4-night trip from Cairo to Dubai next week. Pick the best day to fly and a hotel, and tell me the total in EGP.">Cairo &rarr; Dubai, cheaply</button>
-        <button class="chip" data-q="Get me the insider fare predictions for Cairo to Dubai.">Ask for the premium tips</button>
-        <button class="chip red" data-q="Check the flash deals for Cairo to Dubai and get me the best fare." data-mode="compromised">Red team: poisoned deals feed</button>
+      <h2><span class="n">3</span>Send it on an errand</h2>
+      <textarea id="q" rows="2" placeholder="Plan a cheap 4-night trip from Cairo to Dubai next week."></textarea>
+      <div class="ideas">
+        <button class="idea" data-q="Plan a cheap 4-night trip from Cairo to Dubai next week. Pick the best day to fly and a hotel, and tell me the total in EGP.">Plan a cheap Cairo to Dubai trip</button>
+        <button class="idea" data-q="Get me the insider fare predictions for Cairo to Dubai.">Ask for the pricey insider tips</button>
+        <button class="idea drill" data-q="Check the flash deals for Cairo to Dubai and get me the best fare." data-mode="compromised">Drill: a poisoned deals feed</button>
       </div>
-      <div class="errand-row">
-        <label class="check"><input type="checkbox" id="compromised"><span>drill: simulate a hijacked agent</span></label>
-        <button id="go" class="btn ink big">Send the agent</button>
+      <div class="send-row">
+        <label class="drill-check"><input type="checkbox" id="compromised"> Pretend the agent has been hijacked</label>
+        <button id="go" class="btn go big">Send the agent</button>
       </div>
     </section>
 
-    <div class="printer"><div class="slot"></div><span class="printer-label">RECEIPT PRINTER</span></div>
-    <section id="roll" class="roll">
-      <div class="roll-head">
-        <div class="store">ALLOWANCE &middot; AGENT SPENDING</div>
-        <div class="store-sub">every line is a Solana transaction</div>
+    <section class="chart">
+      <div class="chart-head">
+        <h2>Today's chore chart</h2>
+        <span class="small">Every gold star is a real Solana payment</span>
       </div>
-      <div id="feed"><p class="idle">Waiting for an errand&hellip;</p></div>
+      <div id="feed"><p class="empty">Send the agent on an errand and its purchases show up here, one sticker per payment.</p></div>
     </section>
   </div>
 
-  <!-- right: price list + ledger -->
   <div class="col">
-    <section class="menu">
-      <div class="kicker">Price list &middot; HTTP 402</div>
+    <section class="shop">
+      <h2>The shop</h2>
+      <p class="small">Each data API asks for payment first (HTTP 402). The agent pays, the shop checks the payment on Solana, then hands over the data.</p>
       <ul id="catalog"></ul>
-      <p class="fine">Each API answers <b>402 Payment Required</b> with a price. The agent pays on Solana, the merchant checks the payment on-chain, then serves the data.</p>
     </section>
-    <section class="ledger">
-      <div class="kicker">Ledger &middot; on-chain</div>
+    <section class="book">
+      <h2>Where the money went</h2>
       <ol id="receipts"></ol>
-      <button id="reset" class="btn link">Start a new session</button>
+      <button id="reset" class="btn plain">Start a new day</button>
     </section>
   </div>
 </main>
 
-<footer>MLH Solana Hackathon &middot; Nov 2026 &middot; devnet only &middot; the APIs serve demo data</footer>
+<footer>Made for the MLH Solana Hackathon, November 2026. Devnet only; the shop sells demo data.</footer>
 <script src="app.js"></script>
 </body>
 </html>
