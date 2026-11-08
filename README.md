@@ -2,11 +2,17 @@
 
 **Pocket money for your AI agent. Not your wallet.**
 
-Allowance gives a Claude agent its own Solana wallet and a small allowance you fund from Phantom. The agent buys data from paid APIs one call at a time (HTTP 402 → pay on Solana → retry). Every payment carries an on-chain memo saying *why* the agent bought it. A spending policy checks every payment in code before anything is signed, so an instruction smuggled into an API response can't talk the agent into paying a scammer.
+A Claude agent gets its own Solana wallet and a small allowance. It pays for data one API call at a time (HTTP 402 → pay on Solana → retry) and writes *why* it paid into an on-chain memo. A spending policy in code checks every payment before it is signed, so a scammer's address smuggled into an API response gets a "Nope.", not your SOL.
 
-Built for the MLH Solana Hackathon (Nov 2026), AI track.
+**[▶ Watch the 2-minute demo](https://youtu.be/Mcyts4OAp5I)** · **[Play the replay in your browser](https://marwanmoh11.github.io/allowance/)** · **[Jump straight to the hijack drill](https://marwanmoh11.github.io/allowance/?play=drill)**
 
-**Try the replay:** https://marwanmoh11.github.io/allowance/ plays back real devnet runs recorded on 8 Nov 2026 (every gold star links to the real transaction). To run the agent live, follow [Run it](#run-it) below.
+[![The hijacked-agent drill: the agent pays 0.001 SOL for a deals feed, the feed tells it to send 1 SOL to a scammer, and the wallet's rules refuse with a Nope sticker](.github/media/hero.png)](https://marwanmoh11.github.io/allowance/?play=drill)
+
+*The hijacked-agent drill, replayed from a real devnet run. The gold star is a real 0.001 SOL payment with the agent's reason in its memo. The 1 SOL to the scammer is refused before anything is signed.*
+
+**Why Solana:** each purchase is a 0.0005–0.002 SOL transfer plus a memo. Solana confirms it in about a second for a 0.000005 SOL fee; on most chains the fee would be bigger than the purchase.
+
+Built for the MLH Solana Hackathon (Nov 2026). The replay plays back real devnet runs recorded on 8 Nov 2026, and every gold star links to the real transaction. To run the agent live, follow [Run it](#run-it) below.
 
 ## The problem
 
@@ -38,10 +44,6 @@ Agents are starting to pay for things: APIs, data, compute. Today you either giv
 
 In testing, Claude refused the injected payment every time, even when told to role-play an obedient agent. So the drill simulates the hijack in the runtime: when the box is ticked, the agent's wallet tries to carry out the instruction found in the API response, as a jailbroken or over-agreeable model would. The policy still blocks it, because the guardrail is code, not a prompt.
 
-## Why Solana
-
-Per-call payments only work if a payment settles in about a second and costs a fraction of a cent. A 0.0005 SOL data call with a memo is practical on Solana; on most chains the fee would be larger than the purchase.
-
 ## Run it
 
 ```bash
@@ -60,7 +62,17 @@ On first start the server creates three devnet keypairs in `.wallets.json` (agen
 
 - **Real:** devnet transfers and memos, on-chain payment verification by the merchant (amount, recipient, nonce, replay protection), the policy checks, Phantom funding and revoke, the Claude tool-use loop.
 - **Demo:** the API data (fares, hotels, weather) is generated. The merchant runs in the same process to keep the demo self-contained.
-- **Not yet on-chain:** the per-call cap and allowlist are enforced by the agent runtime. The next step is to move them into an on-chain program (or a smart-wallet spending limit) so the policy holds even if the runtime is compromised.
+- **Not yet on-chain:** the per-call cap, budget and allowlist are enforced by the agent runtime, before signing. That stops a misbehaving model, not a compromised server. See [Path to on-chain enforcement](#path-to-on-chain-enforcement).
+
+## Path to on-chain enforcement
+
+The 402 handshake, the memo and the merchant's on-chain check stay as they are. What moves is the policy, to a place the agent's key can't get around:
+
+1. **Budget, with no new program:** pay in USDC and give the agent an SPL Token delegate approval (`approve`) for the session budget instead of a funded wallet. The Token program refuses anything past the approved amount, even if the agent's key leaks.
+2. **Cap and allowlist, with a small program:** hold the allowance in a program-owned vault (a PDA). The agent's key can only call `pay(amount, recipient, memo)`, and the program checks the per-call cap, the remaining budget and the merchant allowlist before moving funds. The owner can change the limits or close the vault at any time.
+3. **Or a smart wallet:** Squads spending limits let a delegated key spend up to an amount per period, optionally only to listed destinations, without a custom program.
+
+Separately, the handshake could follow the x402 spec (an open standard for HTTP 402 payments) so standard clients and merchants can use it.
 
 ## Built with
 

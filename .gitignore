@@ -3,3 +3,4 @@ node_modules
 .wallets.json
 .used-sigs.json
 SUBMISSION.md
+JUDGE-REVIEW.md
