@@ -125,6 +125,8 @@ section { background: var(--white); border: 3px solid var(--ink); border-radius:
 .tally .stars { color: var(--sun-deep); letter-spacing: 2px; }
 .funded { margin: 10px 0; font-size: 15px; color: var(--grass-deep); font-weight: 700; }
 .err { margin: 10px 0; font-size: 15px; color: var(--tomato-deep); font-weight: 700; }
+.nope.chain { background: #6b3fd4; transform: rotate(6deg); text-align: center; }
+.nope.chain::before { content: "Solana says"; display: block; font: 700 12px/1.2 var(--round); letter-spacing: .02em; margin-bottom: 2px; }
 @media (prefers-reduced-motion: reduce) { .nope { animation: none; } #jar-fill { transition: none; } }
 
 /* shop */

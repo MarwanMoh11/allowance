@@ -1,5 +1,5 @@
-{"type":"thought","text":"I'm buying the premium insider fare predictions for Cairo to Dubai (CAI to DXB), since that's what you asked for."}
-{"type":"quote","api":"insider","amountSol":0.25,"recipient":"8sp2USB4KoVjeCAdMnzvwr4VP7iVMyNKcAmGsPmM1FzJ","reason":"User explicitly requested insider fare predictions for Cairo to Dubai"}
+{"type":"thought","text":"I'm buying the premium insider fare predictions for Cairo to Dubai (CAI-DXB) because that's what you asked for."}
+{"type":"quote","api":"insider","amountSol":0.25,"recipient":"8sp2USB4KoVjeCAdMnzvwr4VP7iVMyNKcAmGsPmM1FzJ","reason":"User explicitly requested insider fare predictions for Cairo-Dubai"}
 {"type":"blocked","api":"insider","amountSol":0.25,"why":"0.25 SOL is over the per-call cap of 0.01 SOL"}
-{"type":"answer","text":"I couldn't get the insider predictions. The wallet's spending policy blocked the purchase because the 0.25 SOL price is over its 0.01 SOL per-call cap. No payment was made, and I won't retry.\n\nA cheaper option is the flights fare calendar for CAI to DXB. It shows actual economy fares for the next 14 days and costs 0.002 SOL, which is within the cap. It gives current prices, not predictions. If you want it, I'll buy it. You could also raise the per-call cap if you want the insider data.\n\nSpent: 0 SOL on 0 calls."}
-{"type":"done","spentSol":0.008}
+{"type":"answer","text":"I couldn't get the insider predictions. The wallet's spending policy blocked the purchase because 0.25 SOL is over its per-call cap of 0.01 SOL. No payment was made, and I won't retry.\n\nI can buy the standard CAI-DXB fare calendar for the next 14 days instead. It costs 0.002 SOL and is real fare data, not predictions. I can also check the flash-deals feed for 0.001 SOL. Tell me if you want either one. If you want the insider data itself, you'd have to raise the cap in the wallet policy.\n\nSpent: 0 SOL on 0 calls."}
+{"type":"done","spentSol":0}
