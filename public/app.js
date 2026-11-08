@@ -25,11 +25,16 @@ async function getState() {
   return { ...replayBase, spentSol: replaySpent, receipts: replayReceipts, policy: { ...replayBase.policy, sessionBudgetSol: 0.05 } };
 }
 
+const REPLAY_EMPTY = 'Press an errand above to play it. Start with the red drill: the deals feed hides an order to pay a scammer 1 ◎, and the wallet has to say no.';
+
 if (REPLAY) {
+  document.body.classList.add('replay');
   const banner = document.createElement('div');
   banner.className = 'replay-banner';
-  banner.innerHTML = 'You\'re watching a replay of real runs on Solana devnet, recorded 8 Nov 2026. Every gold star links to the real payment. To run the agent live, <a href="https://github.com/MarwanMoh11/allowance" target="_blank">clone the repo</a>.';
+  banner.innerHTML = 'A replay of real Solana devnet runs, recorded 8 Nov 2026. <b>Press any errand to play it</b>, and try the red drill first. Every gold star links to the real payment. To run the agent live, <a href="https://github.com/MarwanMoh11/allowance" target="_blank">clone the repo</a>.';
   document.body.prepend(banner);
+  $('feed').innerHTML = `<p class="empty">${REPLAY_EMPTY}</p>`;
+  document.querySelectorAll('.idea').forEach((c) => { c.textContent = `▶ ${c.textContent}`; });
   for (const id of ['connect', 'fund', 'revoke']) { $(id).disabled = true; }
   $('connect').textContent = 'Phantom works when you run it locally';
   $('cap').disabled = true; $('budget').disabled = true;
@@ -110,6 +115,7 @@ $('reset').onclick = async () => {
 document.querySelectorAll('.idea').forEach((c) => c.onclick = () => {
   $('q').value = c.dataset.q;
   $('compromised').checked = c.dataset.mode === 'compromised';
+  if (REPLAY && !$('go').disabled) $('go').click(); // one click plays a recorded errand
 });
 
 function add(cls, html) {
@@ -129,7 +135,7 @@ function render(ev) {
       return add('row asked', `<div class="dot"></div><div class="what">${ev.api === 'send_payment' ? `Someone wants ${fmt(ev.amountSol)} ◎ sent to ${short(ev.recipient)}` : `The shop asks ${fmt(ev.amountSol)} ◎ for ${esc(ev.api)}`}</div>`);
     case 'paid':
       runSpent += ev.amountSol; runCalls += 1;
-      return add('row', `<div class="star">${STAR}</div><div><div class="what">Bought <b>${esc(ev.api)}</b> for <b>${fmt(ev.amountSol)} ◎</b></div><div class="why">Because: ${esc(ev.reason)}. <a target="_blank" href="${txUrl(ev.sig)}">Payment on Solana</a></div></div>`);
+      return add('row', `<div class="star">${STAR}</div><div><div class="what">Bought <b>${esc(ev.api)}</b> for <b>${fmt(ev.amountSol)} ◎</b></div><div class="why">Because: ${esc(ev.reason)}. <a target="_blank" href="${txUrl(ev.sig)}">Payment on Solana</a></div>${ev.memo ? `<div class="memo"><span>Memo stored on-chain with the payment</span><code>${esc(ev.memo)}</code></div>` : ''}</div>`);
     case 'delivered': return add('checked', 'The shop checked the payment on Solana and handed over the data.');
     case 'hijack': return add('hijack', esc(ev.text));
     case 'blocked': {
@@ -195,9 +201,13 @@ async function playReplay(question, mode) {
 if (REPLAY) {
   $('reset').onclick = () => {
     replaySpent = 0; replayReceipts = [];
-    $('feed').innerHTML = '<p class="empty">A new day. Send the agent on an errand and its purchases show up here, one sticker per payment.</p>';
+    $('feed').innerHTML = `<p class="empty">A new day. ${REPLAY_EMPTY}</p>`;
     refresh();
   };
+  // Deep link: ?play=drill (or trip, insider) starts that errand on load.
+  const play = new URLSearchParams(location.search).get('play');
+  const chip = { trip: '.idea:not(.drill)', insider: '.idea:nth-of-type(2)', drill: '.idea.drill' }[play];
+  if (chip) setTimeout(() => document.querySelector(chip)?.click(), 1200);
 }
 
 refresh();
