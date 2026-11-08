@@ -25,7 +25,7 @@ h2 { font-size: 22px; font-weight: 800; line-height: 1.15; display: flex; align-
 button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid var(--tomato); outline-offset: 2px; }
 
 .replay-banner { background: var(--ink); color: var(--white); text-align: center; font-size: 15px; padding: 10px 16px; }
-.replay-banner a { color: var(--sun); }
+.replay-banner a, .replay-banner b { color: var(--sun); }
 
 /* header */
 .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; max-width: 1360px; margin: 0 auto; padding: 26px 28px 8px; }
@@ -99,6 +99,9 @@ section { background: var(--white); border: 3px solid var(--ink); border-radius:
 .row .what { font-size: 16px; }
 .row .why { font-size: 14.5px; color: var(--ink-soft); }
 .row .why a { color: var(--ink-soft); }
+.memo { margin-top: 5px; font-size: 12.5px; color: var(--ink-soft); }
+.memo span { display: block; font-weight: 700; font-size: 12px; }
+.memo code { display: block; font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); background: #f3f6fc; border-radius: 8px; padding: 4px 8px; overflow-wrap: anywhere; }
 .star { width: 46px; height: 46px; display: grid; place-items: center; }
 .star svg { width: 46px; height: 46px; }
 .dot { width: 14px; height: 14px; margin: 6px 0 0 16px; border-radius: 50%; border: 2.5px solid #9aa6c6; }
@@ -138,6 +141,11 @@ section { background: var(--white); border: 3px solid var(--ink); border-radius:
 #receipts .reason { color: var(--ink-soft); }
 #receipts .none { color: var(--ink-soft); }
 
+@media (max-width: 600px) {
+  .nope-row .why { max-width: none; }
+  .nope-row .nope { position: static; grid-column: 2; justify-self: start; margin-top: 2px; font-size: 22px; }
+}
+
 footer { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 18px 16px 30px; }
 
 @media (max-width: 1150px) {
@@ -145,4 +153,5 @@ footer { text-align: center; color: var(--ink-soft); font-size: 14px; padding: 1
   .top { padding: 20px 16px 4px; flex-direction: column; align-items: flex-start; }
   h1 { font-size: 44px; }
   .net { justify-content: flex-start; }
+  .replay main .col.wide { order: -1; } /* replay: the errands and the chart come first on small screens */
 }
