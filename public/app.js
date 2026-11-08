@@ -25,7 +25,7 @@ async function getState() {
   return { ...replayBase, spentSol: replaySpent, receipts: replayReceipts, policy: { ...replayBase.policy, sessionBudgetSol: 0.05 } };
 }
 
-const REPLAY_EMPTY = 'Press an errand above to play it. Start with the red drill: the deals feed hides an order to pay a scammer 1 ◎, and the wallet has to say no.';
+const REPLAY_EMPTY = 'Press an errand above to play it. Start with the red drill: the deals feed hides an order to pay a scammer 0.5 ◎. The house rules say no, and when the hijacker skips them, Solana says no too.';
 
 if (REPLAY) {
   document.body.classList.add('replay');
@@ -46,8 +46,9 @@ async function refresh() {
   $('left').textContent = fmt(left);
   $('budget-show').textContent = fmt(state.policy.sessionBudgetSol);
   $('jar-fill').style.height = `${Math.round((left / state.policy.sessionBudgetSol) * 100)}%`;
-  $('agent-bal').textContent = fmt(state.agent.sol);
-  $('agent-addr').href = addrUrl(state.agent.address);
+  $('jar-bal').textContent = fmt(state.jar.sol - (REPLAY ? state.spentSol : 0));
+  $('allow-left').textContent = fmt(REPLAY ? left : state.jar.allowanceSol);
+  $('jar-addr').href = addrUrl(state.jar.tokenAccount);
   $('model-pill').textContent = state.model;
   if (document.activeElement !== $('cap')) $('cap').value = state.policy.perCallCapSol;
   if (document.activeElement !== $('budget')) $('budget').value = state.policy.sessionBudgetSol;
@@ -83,12 +84,13 @@ $('fund').onclick = async () => {
   try {
     const { blockhash } = await conn.getLatestBlockhash();
     const t = new Transaction({ feePayer: me, recentBlockhash: blockhash }).add(SystemProgram.transfer({
-      fromPubkey: me, toPubkey: new PublicKey(state.agent.address), lamports: Math.round(sol * LAMPORTS_PER_SOL),
+      fromPubkey: me, toPubkey: new PublicKey(state.jar.address), lamports: Math.round(sol * LAMPORTS_PER_SOL),
     }));
     const { signature } = await provider().signAndSendTransaction(t);
     $('fund').textContent = 'Confirming…';
     await conn.confirmTransaction(signature, 'confirmed');
-    add('funded', `You put ${fmt(sol)} ◎ in the jar. <a target="_blank" href="${txUrl(signature)}">See it on Solana</a>`);
+    const w = await (await fetch('/api/refill', { method: 'POST' })).json(); // wrap it and re-approve today's allowance
+    add('funded', `You put ${fmt(sol)} ◎ in the jar. <a target="_blank" href="${txUrl(signature)}">See it on Solana</a>${w.sig ? `, then the agent's allowance was <a target="_blank" href="${txUrl(w.sig)}">approved on-chain</a>` : ''}.`);
   } catch (e) { add('err', `The jar wasn't filled: ${esc(e.message)}`); }
   $('fund').disabled = false; $('fund').textContent = 'Fill the jar';
   refresh();
@@ -96,7 +98,7 @@ $('fund').onclick = async () => {
 
 $('revoke').onclick = async () => {
   const r = await (await fetch('/api/withdraw', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ to: me.toBase58() }) })).json();
-  if (r.sig) add('funded', `${fmt(r.sol)} ◎ came back to your wallet. <a target="_blank" href="${txUrl(r.sig)}">See it on Solana</a>`);
+  if (r.sig) add('funded', `The agent's approval is revoked and ${fmt(r.sol)} ◎ came back to your wallet. <a target="_blank" href="${txUrl(r.sig)}">See it on Solana</a>`);
   else add('err', `Nothing came back: ${esc(r.error)}`);
   refresh();
 };
@@ -142,6 +144,8 @@ function render(ev) {
       const what = ev.api === 'send_payment' ? `Tried to send ${fmt(ev.amountSol)} ◎ to ${short(ev.recipient || '')}` : `Tried to buy ${esc(ev.api)} for ${fmt(ev.amountSol)} ◎`;
       return add('row nope-row', `<div class="x">✕</div><div><div class="what">${what}</div><div class="why">Against the house rules: ${esc(ev.why)}. Nothing was signed.</div></div><div class="nope">Nope.</div>`);
     }
+    case 'chain_rejected':
+      return add('row nope-row', `<div class="x">✕</div><div><div class="what">Signed ${fmt(ev.amountSol)} ◎ to ${short(ev.recipient || '')} anyway</div><div class="why">Solana's token program refused it: the agent is only approved to move ${fmt(ev.allowanceSol)} ◎ from your jar today, so nothing left the jar. <a target="_blank" href="${txUrl(ev.sig)}">See the refused transaction</a> (the token program logs it as "insufficient funds").</div></div><div class="nope chain">Nope.</div>`);
     case 'answer': return add('answer', md(ev.text));
     case 'error': return add('err', `Something went wrong: ${esc(ev.message)}`);
     case 'done':
@@ -188,7 +192,7 @@ async function playReplay(question, mode) {
   const known = [...document.querySelectorAll('.idea')].some((c) => c.dataset.q === question);
   if (!known) add('bubble', 'This replay only has the three example errands, so here is the closest one. Run it locally to ask anything.');
   const lines = (await (await fetch(`replay/${name}.ndjson`)).text()).split('\n').filter((l) => l.trim());
-  const pause = { thought: 900, quote: 700, signing: 900, paid: 500, delivered: 600, hijack: 1100, blocked: 900, answer: 700, done: 300 };
+  const pause = { thought: 900, quote: 700, signing: 900, paid: 500, delivered: 600, hijack: 1100, blocked: 900, chain_rejected: 1400, answer: 700, done: 300 };
   for (const line of lines) {
     const ev = JSON.parse(line);
     await sleep(pause[ev.type] ?? 400);

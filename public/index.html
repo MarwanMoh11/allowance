@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Allowance</title>
-<meta name="description" content="A Claude agent with its own Solana wallet and an allowance. It pays for data per API call (HTTP 402), writes why into an on-chain memo, and a spending policy in code says Nope to anything off-limits.">
+<meta name="description" content="A Claude agent with a Solana allowance. It pays for data per API call (HTTP 402), writes why into an on-chain memo, and an SPL Token approval plus a policy in code say Nope to anything off-limits.">
 <meta property="og:title" content="Allowance: pocket money for your AI agent, not your wallet">
-<meta property="og:description" content="Replay real Solana devnet runs: a Claude agent pays per API call with an on-chain memo, and the wallet refuses a hijacked payment.">
+<meta property="og:description" content="Replay real Solana devnet runs: a Claude agent pays per API call with an on-chain memo, and a hijacked payment is refused by the house rules, then by Solana's token program.">
 <meta property="og:image" content="https://marwanmoh11.github.io/allowance/og.png">
 <meta property="og:url" content="https://marwanmoh11.github.io/allowance/">
 <meta name="twitter:card" content="summary_large_image">
@@ -40,7 +40,7 @@
         <div class="jar-read">
           <div class="left-today"><span id="left">0.05</span> ◎</div>
           <div class="sub">left to spend today, out of <span id="budget-show">0.05</span></div>
-          <div class="onchain">The agent's wallet holds <b id="agent-bal">…</b> ◎ on Solana. <a id="agent-addr" target="_blank">See wallet</a></div>
+          <div class="onchain">Your jar holds <b id="jar-bal">…</b> ◎ on Solana, and the agent is approved to move only <b id="allow-left">…</b> ◎ of it. <a id="jar-addr" target="_blank">See the jar</a></div>
         </div>
       </div>
 
@@ -64,7 +64,7 @@
         <li>Spend no more than <input id="budget" type="number" step="0.01" min="0.001" value="0.05"> ◎ today</li>
         <li>Only buy from the shop <span id="allow" class="addr"></span></li>
       </ul>
-      <p class="small">Your agent can't see these numbers or argue with them. The wallet checks every payment against them before signing.</p>
+      <p class="small">Your agent can't see these numbers or argue with them. The daily limit is an on-chain token approval, so Solana itself refuses anything past it. The per-item cap and the shop list are checked in code before anything is signed.</p>
       <p class="small spent-line">Spent today: <b id="spent">0</b> ◎</p>
     </section>
   </div>

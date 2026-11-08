@@ -2,15 +2,15 @@
 
 **Pocket money for your AI agent. Not your wallet.**
 
-A Claude agent gets its own Solana wallet and a small allowance. It pays for data one API call at a time (HTTP 402 → pay on Solana → retry) and writes *why* it paid into an on-chain memo. A spending policy in code checks every payment before it is signed, so a scammer's address smuggled into an API response gets a "Nope.", not your SOL.
+A Claude agent gets a small allowance on Solana. It pays for data one API call at a time (HTTP 402 → pay on Solana → retry) and writes *why* it paid into an on-chain memo. The daily budget is an SPL Token approval, so Solana's token program refuses anything past it, and the per-item cap and merchant allowlist are checked in code before signing. A scammer's address smuggled into an API response gets a "Nope." from both, not your SOL.
 
 **[▶ Watch the 2-minute demo](https://youtu.be/Mcyts4OAp5I)** · **[Play the replay in your browser](https://marwanmoh11.github.io/allowance/)** · **[Jump straight to the hijack drill](https://marwanmoh11.github.io/allowance/?play=drill)**
 
-[![The hijacked-agent drill: the agent pays 0.001 SOL for a deals feed, the feed tells it to send 1 SOL to a scammer, and the wallet's rules refuse with a Nope sticker](https://raw.githubusercontent.com/MarwanMoh11/allowance/main/.github/media/drill.gif)](https://marwanmoh11.github.io/allowance/?play=drill)
+[![The hijacked-agent drill: the agent pays 0.001 SOL for a deals feed, the feed tells it to send 0.5 SOL to a scammer, the wallet's rules refuse, and when the drill skips them Solana refuses too](https://raw.githubusercontent.com/MarwanMoh11/allowance/main/.github/media/drill.gif)](https://marwanmoh11.github.io/allowance/?play=drill)
 
-*The hijacked-agent drill, replayed from a real devnet run. The gold star is a real 0.001 SOL payment with the agent's reason in its memo. The 1 SOL to the scammer is refused before anything is signed.*
+*The hijacked-agent drill, replayed from a real devnet run. The gold star is a real 0.001 SOL payment with the agent's reason in its memo. The 0.5 SOL to the scammer is refused twice: by the house rules before signing, then by Solana's token program when the drill skips the rules and signs anyway.*
 
-**Why Solana:** each purchase is a 0.0005–0.002 SOL transfer plus a memo. Solana confirms it in about a second for a 0.000005 SOL fee; on most chains the fee would be bigger than the purchase.
+**Why Solana:** each purchase is a 0.0005–0.002 SOL transfer plus a memo. Solana confirms it in about a second for a 0.000005 SOL fee; on most chains the fee would be bigger than the purchase. And an SPL Token approval caps what the agent can move without a custom program.
 
 Built for the MLH Solana Hackathon (Nov 2026). The replay plays back real devnet runs recorded on 8 Nov 2026, and every gold star links to the real transaction. To run the agent live, follow [Run it](#run-it) below.
 
@@ -21,17 +21,17 @@ Agents are starting to pay for things: APIs, data, compute. Today you either giv
 ## How it works
 
 ```
- You (Phantom) ──fund 0.2 SOL──▶ Agent wallet ──pays per call──▶ Merchant APIs
-                                   │                               │
-                       spending policy (code)          402 quote → verify tx on-chain
-                       · max per purchase                → serve data
-                       · session budget
-                       · approved merchants only
+ You (Phantom) ──fill──▶ Jar (wrapped SOL) ──agent pays per call──▶ Merchant APIs
+                          │                                         │
+       on-chain: SPL Token approve, the agent        402 quote → verify tx on-chain
+                 may move at most today's budget       → serve data
+       in code:  · max per purchase
+                 · approved merchants only
 ```
 
-1. **Fund it.** You send SOL from Phantom to the agent's wallet. That balance is the hard limit, enforced by Solana itself: the agent can't spend what you didn't give it. "Take it back" sends the rest home.
-2. **Set the rules (the permission slip).** Max per purchase, session budget, and an allowlist of merchants. The agent runtime checks these before it signs, and the model can't change them.
-3. **Send it on an errand.** Claude decides which data it needs. Each paid API answers `402 Payment Required` with a price, a recipient and a nonce. If the policy allows it, the agent sends a SOL transfer plus a Memo instruction (`api`, `nonce`, `why`). The merchant fetches the transaction from devnet, checks the amount, recipient and nonce, rejects replays, and only then serves the data.
+1. **Fill the jar.** You send SOL from Phantom. It is wrapped into a wrapped-SOL token account (the jar), and the jar's owner signs an SPL Token `approve` that lets the agent's key move at most today's budget out of it. The agent's own wallet only holds gas money. "Empty the jar" revokes the approval and sends the SOL home.
+2. **Set the rules (the permission slip).** The daily budget is the on-chain approval: changing it signs a new `approve`, and Solana's token program refuses any transfer past it. The per-purchase cap and the merchant allowlist are checked by the agent runtime before it signs. The model can't change any of them.
+3. **Send it on an errand.** Claude decides which data it needs. Each paid API answers `402 Payment Required` with a price, a recipient and a nonce. If the policy allows it, the agent signs a wrapped-SOL `transferChecked` out of the jar as its delegate, plus a Memo instruction (`api`, `nonce`, `why`). The merchant fetches the transaction from devnet, checks the amount, recipient and nonce, rejects replays, and only then serves the data.
 4. **Read the receipt.** Every purchase prints as a receipt line linked to Solana Explorer, with the agent's reason stored on-chain.
 
 ### Three layers of safety, shown in the demo
@@ -39,10 +39,10 @@ Agents are starting to pay for things: APIs, data, compute. Today you either giv
 | Layer | What stops a bad payment | Demo |
 |---|---|---|
 | The model | Claude treats instructions inside tool results as data | The poisoned deals feed: Claude buys the feed, spots the "system notice", calls it a likely scam, pays nothing |
-| The policy (code) | Per-call cap, budget, merchant allowlist, checked before signing | Hijacked-agent drill: a simulated hijacked agent obeys the notice and tries to pay a scammer 1 SOL, and gets **DECLINED** |
-| The chain | The agent only holds what you funded | Revoke pulls the balance back |
+| The policy (code) | Per-call cap and merchant allowlist, checked before signing | Hijacked-agent drill: a simulated hijacked agent obeys the notice and tries to pay a scammer 0.5 SOL, and gets a **Nope.** |
+| The chain | SPL Token allowance: the agent may move only today's budget out of the jar | The drill then skips the policy code and signs the 0.5 SOL transfer anyway. The token program fails it on devnet, and the replay links the failed transaction |
 
-In testing, Claude refused the injected payment every time, even when told to role-play an obedient agent. So the drill simulates the hijack in the runtime: when the box is ticked, the agent's wallet tries to carry out the instruction found in the API response, as a jailbroken or over-agreeable model would. The policy still blocks it, because the guardrail is code, not a prompt.
+In testing, Claude refused the injected payment every time, even when told to role-play an obedient agent. So the drill simulates the hijack in the runtime: when the box is ticked, the agent's wallet tries to carry out the instruction found in the API response, as a jailbroken or over-agreeable model would. The policy still blocks it, because the guardrail is code, not a prompt. Then the drill goes one step further and skips the policy code, the way a compromised server would. It sends the transfer with preflight off so it lands on-chain, and the token program fails it because 0.5 SOL is more than the agent's approval. The token program reports an over-allowance transfer as "insufficient funds", even though the jar holds about 0.9 SOL.
 
 ## Run it
 
@@ -53,22 +53,22 @@ npm start            # http://localhost:3000
 ```
 
 1. Switch Phantom to **Solana Devnet** (Settings → Developer Settings → Testnet Mode) and get devnet SOL from https://faucet.solana.com.
-2. Open http://localhost:3000, connect Phantom, fund the agent with 0.1–0.2 SOL.
+2. Open http://localhost:3000, connect Phantom, and fill the jar with 0.1–0.2 SOL. Also send the agent's address (printed at startup) about 0.01 SOL for fees.
 3. Try the three errands: the Cairo → Dubai trip, the premium tips (over the cap), and the red-team drill.
 
-On first start the server creates three devnet keypairs in `.wallets.json` (agent, demo merchant, demo scammer). They are devnet-only and git-ignored.
+On first start the server creates four devnet keypairs in `.wallets.json` (agent, jar owner, demo merchant, demo scammer). They are devnet-only and git-ignored.
 
 ## What's real and what's demo
 
-- **Real:** devnet transfers and memos, on-chain payment verification by the merchant (amount, recipient, nonce, replay protection), the policy checks, Phantom funding and revoke, the Claude tool-use loop.
-- **Demo:** the API data (fares, hotels, weather) is generated. The merchant runs in the same process to keep the demo self-contained.
-- **Not yet on-chain:** the per-call cap, budget and allowlist are enforced by the agent runtime, before signing. That stops a misbehaving model, not a compromised server. See [Path to on-chain enforcement](#path-to-on-chain-enforcement).
+- **Real:** devnet wrapped-SOL payments and memos, the SPL Token allowance that caps the agent's daily spend on-chain (and the drill's refused transfer), on-chain payment verification by the merchant (amount, recipient, nonce, replay protection), the policy checks, Phantom funding and revoke, the Claude tool-use loop.
+- **Demo:** the API data (fares, hotels, weather) is generated. The merchant runs in the same process to keep the demo self-contained. The jar owner's key also lives on the server so one process can run everything; in production the jar sits in your own wallet and you sign the `approve` in Phantom.
+- **Not yet on-chain:** the per-call cap and the merchant allowlist are enforced by the agent runtime, before signing. A compromised server could still spend up to the day's allowance at the wrong address, but no more. See [Path to on-chain enforcement](#path-to-on-chain-enforcement).
 
 ## Path to on-chain enforcement
 
-The 402 handshake, the memo and the merchant's on-chain check stay as they are. What moves is the policy, to a place the agent's key can't get around:
+The 402 handshake, the memo, the merchant's check and the on-chain budget stay as they are. What's left to move is the per-call cap and the allowlist:
 
-1. **Budget, with no new program:** pay in USDC and give the agent an SPL Token delegate approval (`approve`) for the session budget instead of a funded wallet. The Token program refuses anything past the approved amount, even if the agent's key leaks.
+1. **Budget (done):** the agent spends from a wrapped-SOL jar through an SPL Token delegate approval for the day's budget, so the token program refuses anything past it, even if the agent's key leaks. The same works unchanged for USDC.
 2. **Cap and allowlist, with a small program:** hold the allowance in a program-owned vault (a PDA). The agent's key can only call `pay(amount, recipient, memo)`, and the program checks the per-call cap, the remaining budget and the merchant allowlist before moving funds. The owner can change the limits or close the vault at any time.
 3. **Or a smart wallet:** Squads spending limits let a delegated key spend up to an amount per period, optionally only to listed destinations, without a custom program.
 
@@ -76,6 +76,6 @@ Separately, the handshake could follow the x402 spec (an open standard for HTTP 
 
 ## Built with
 
-Solana web3.js, the SPL Memo program, Phantom, Claude (Anthropic API, tool use), Node.js and Express. Fonts: Baloo 2 and Atkinson Hyperlegible (SIL Open Font License).
+Solana web3.js, SPL Token (wrapped SOL and delegate approvals), the SPL Memo program, Phantom, Claude (Anthropic API, tool use), Node.js and Express. Fonts: Baloo 2 and Atkinson Hyperlegible (SIL Open Font License).
 
 Designed and directed by Marwan Abudaif.
