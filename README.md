@@ -62,7 +62,7 @@ On first start the server creates four devnet keypairs in `.wallets.json` (agent
 
 - **Real:** devnet wrapped-SOL payments and memos, the SPL Token allowance that caps the agent's daily spend on-chain (and the drill's refused transfer), on-chain payment verification by the merchant (amount, recipient, nonce, replay protection), the policy checks, Phantom funding and revoke, the Claude tool-use loop.
 - **Demo:** the API data (fares, hotels, weather) is generated. The merchant runs in the same process to keep the demo self-contained. The jar owner's key also lives on the server so one process can run everything; in production the jar sits in your own wallet and you sign the `approve` in Phantom.
-- **Not yet on-chain:** the per-call cap and the merchant allowlist are enforced by the agent runtime, before signing. A compromised server could still spend up to the day's allowance at the wrong address, but no more. See [Path to on-chain enforcement](#path-to-on-chain-enforcement).
+- **Not yet on-chain:** the per-call cap and the merchant allowlist are enforced by the agent runtime, before signing. With the jar in your own wallet, a compromised agent server could still spend up to the day's allowance at the wrong address, but no more. In this demo the jar's key sits on the same server, so the on-chain limit holds against a hijacked agent runtime, not against someone who owns the whole machine. See [Path to on-chain enforcement](#path-to-on-chain-enforcement).
 
 ## Path to on-chain enforcement
 
