@@ -1,0 +1,17 @@
+{
+  "name": "allowance",
+  "version": "1.0.0",
+  "description": "Give your AI agent pocket money, not your wallet. A Claude agent that pays for APIs per call on Solana, under a spending policy enforced in code.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "@solana/web3.js": "^1.99.0",
+    "dotenv": "^18.0.9",
+    "express": "^4.22.3"
+  }
+}
