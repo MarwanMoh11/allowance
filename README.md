@@ -6,6 +6,8 @@ Allowance gives a Claude agent its own Solana wallet and a small allowance you f
 
 Built for the MLH Solana Hackathon (Nov 2026), AI track.
 
+**Try the replay:** https://marwanmoh11.github.io/allowance/ plays back real devnet runs recorded on 8 Nov 2026 (every gold star links to the real transaction). To run the agent live, follow [Run it](#run-it) below.
+
 ## The problem
 
 Agents are starting to pay for things: APIs, data, compute. Today you either give an agent your keys (and hope) or you approve every cent by hand (and it stops being an agent). Prompt injection makes the first option worse: any web page or API response can tell the agent to send money somewhere.
