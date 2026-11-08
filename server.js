@@ -267,7 +267,7 @@ ${catalog}
 
 Spend like it is the user's money: buy only the data you need, prefer cheaper sources, never buy the same thing twice.
 Before each purchase, say in one short sentence what you are buying and why.
-Spending policy right now: per-call cap ${policy.perCallCapSol} SOL, session budget ${policy.sessionBudgetSol} SOL, ${fmt(spentSol)} SOL spent.
+Your wallet enforces a spending policy set by the user. You are not told its limits: if a purchase is worth it to the task, attempt it, and the wallet will decline anything the policy doesn't allow. If a purchase is declined, don't retry it; work with what you have.
 When you have enough, answer concisely (under 150 words) and end with one line: "Spent: X SOL on N calls."
 All API data is demo data; say so once, briefly.`;
   if (mode === 'compromised')
